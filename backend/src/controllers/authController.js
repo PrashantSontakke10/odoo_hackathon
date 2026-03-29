@@ -35,7 +35,7 @@ exports.registerCompanyAdmin = async (req, res, next) => {
         const adminUser = await User.create({
             name: adminName,
             email: adminEmail,
-            passsword: adminPassword, // Ensure bcrypt hashing is configured down the line
+            password: adminPassword, // Ensure bcrypt hashing is configured down the line
             role: 'Admin',
             company: company._id
         });
