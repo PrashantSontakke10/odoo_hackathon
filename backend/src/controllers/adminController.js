@@ -1,6 +1,17 @@
 const User = require('../models/User');
 const ApprovalRule = require('../models/ApprovalRule');
 
+exports.getUsers = async (req, res, next) => {
+    try {
+        const users = await User.find({ company: req.user.company })
+            .select('-password')
+            .populate('manager', 'name email');
+        res.json(users);
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.createUser = async (req, res, next) => {
     try {
         const { name, email, password, role, managerId } = req.body;
@@ -15,7 +26,10 @@ exports.createUser = async (req, res, next) => {
             manager: managerId || null
         });
 
-        res.status(201).json(user);
+        // Resolve dependencies instantly for frontend payload
+        const populatedUser = await User.findById(user._id).select('-password').populate('manager', 'name email');
+
+        res.status(201).json(populatedUser);
     } catch (error) {
         next(error);
     }
@@ -41,11 +55,12 @@ exports.assignManager = async (req, res, next) => {
         const user = await User.findById(req.params.id);
         if(!user) return res.status(404).json({ message: 'User not found' });
         
-        // Define manager relationships for employees
-        user.manager = req.body.managerId;
+        // Define manager relationships for employees. 'null' maps to unassign.
+        user.manager = req.body.managerId || null;
         await user.save();
         
-        res.json(user);
+        const populatedUser = await User.findById(user._id).select('-password').populate('manager', 'name email');
+        res.json(populatedUser);
     } catch (error) {
         next(error);
     }
